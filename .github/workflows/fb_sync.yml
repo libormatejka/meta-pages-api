@@ -29,5 +29,4 @@ jobs:
           GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
           GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
           BQ_DATASET: ${{ secrets.BQ_DATASET }}
-          BQ_TABLE: ${{ secrets.BQ_TABLE }}
         run: python main.py
