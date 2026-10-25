@@ -179,6 +179,11 @@ def merge_rows(client, table, schema, rows, keys):
 
 
 if __name__ == "__main__":
+    required = ['FB_PAGE_ID', 'FB_ACCESS_TOKEN', 'GCP_PROJECT_ID', 'BQ_DATASET', 'GCP_CREDENTIALS']
+    missing = [name for name in required if not os.environ.get(name)]
+    if missing:
+        raise SystemExit(f"❌ Chybí nebo jsou prázdné proměnné prostředí: {', '.join(missing)}")
+
     now = datetime.now(timezone.utc)
     today = now.date()
     ingested_at = now.isoformat()
