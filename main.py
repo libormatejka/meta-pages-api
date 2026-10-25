@@ -111,6 +111,13 @@ def build_page_rows(data, today, ingested_at):
     return list(rows.values())
 
 
+def parse_fb_time(value):
+    # Facebook vrací +0000 bez dvojtečky, BigQuery vyžaduje ISO formát
+    if not value:
+        return None
+    return datetime.strptime(value, '%Y-%m-%dT%H:%M:%S%z').isoformat()
+
+
 def build_post_rows(posts, today, ingested_at):
     rows = []
     for p in posts:
@@ -123,7 +130,7 @@ def build_post_rows(posts, today, ingested_at):
             'snapshot_date': today.isoformat(),
             'page_id': FB_PAGE_ID,
             'post_id': p['id'],
-            'created_time': p.get('created_time'),
+            'created_time': parse_fb_time(p.get('created_time')),
             'message': p.get('message'),
             'permalink_url': p.get('permalink_url'),
             'post_media_view': metrics.get('post_media_view') or 0,
