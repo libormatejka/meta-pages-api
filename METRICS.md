@@ -6,7 +6,6 @@ Popis metrik, které se stahují z Graph API a ukládají do BigQuery (viz [sche
 
 - **Denní metriky stránky** (`period=day`): hodnota za jeden uzavřený den. `end_time` je konec dne, takže `end_time = 2026-10-25T07:00` znamená data za **24. 10. 2026**. Do sloupce `date` se ukládá `end_time - 1 den`.
 - **Lifetime metriky příspěvků** (`period=lifetime`): kumulativní hodnota od vytvoření příspěvku do okamžiku stažení. Mění se každý den, proto se ukládá denní snímek (`snapshot_date`). Denní přírůstek spočítáš rozdílem dvou po sobě jdoucích snímků.
-- **Snímkové hodnoty** (`followers_count`): aktuální stav v okamžiku stažení, ne hodnota za den.
 - Chybějící pole (např. `shares`, prázdné `reactions_by_type`) se ukládají jako 0.
 
 ## Metriky stránky – tabulka `fb_page_daily`
