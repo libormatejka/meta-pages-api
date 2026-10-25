@@ -5,7 +5,11 @@ on:
     # Spustí se každý den v 5:00 ráno UTC
     - cron: '0 5 * * *'
   workflow_dispatch:
-    # Toto nastavení ti umožní spustit akci kdykoliv ručně tlačítkem
+    inputs:
+      backfill_days:
+        description: 'Kolik dní zpět doplnit (1-90). Prázdné = běžný běh (3 dny).'
+        required: false
+        default: ''
 
 jobs:
   sync_metrics:
@@ -29,4 +33,5 @@ jobs:
           GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
           GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
           BQ_DATASET: ${{ secrets.BQ_DATASET }}
+          BACKFILL_DAYS: ${{ github.event.inputs.backfill_days }}
         run: python main.py

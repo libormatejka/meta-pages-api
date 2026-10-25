@@ -26,7 +26,11 @@ PAGE_METRICS = [
 ]
 POST_METRICS = ['post_media_view', 'post_clicks', 'post_reactions_by_type_total']
 
-PAGE_DAYS_BACK = 3    # metriky stránky se zpětně dopočítávají, přepisujeme poslední dny
+# Metriky stránky se zpětně dopočítávají, přepisujeme poslední dny.
+# BACKFILL_DAYS (max 90, limit jednoho volání) slouží k jednorázovému doplnění historie.
+PAGE_DAYS_BACK = int(os.environ.get('BACKFILL_DAYS') or 3)
+if not 1 <= PAGE_DAYS_BACK <= 90:
+    raise SystemExit("❌ BACKFILL_DAYS musí být v rozmezí 1–90.")
 POST_DAYS_BACK = 30   # starší příspěvky se skoro nemění
 
 PAGE_SCHEMA = [
