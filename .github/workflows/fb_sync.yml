@@ -1,0 +1,33 @@
+name: Facebook to BigQuery Daily Sync
+
+on:
+  schedule:
+    # Spustí se každý den v 5:00 ráno UTC
+    - cron: '0 5 * * *'
+  workflow_dispatch:
+    # Toto nastavení ti umožní spustit akci kdykoliv ručně tlačítkem
+
+jobs:
+  sync_metrics:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repozitáře
+        uses: actions/checkout@v4
+        
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          
+      - name: Instalace závislostí
+        run: pip install requests google-cloud-bigquery google-auth
+        
+      - name: Spuštění Python skriptu
+        env:
+          FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
+          FB_ACCESS_TOKEN: ${{ secrets.FB_ACCESS_TOKEN }}
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
+          BQ_DATASET: ${{ secrets.BQ_DATASET }}
+          BQ_TABLE: ${{ secrets.BQ_TABLE }}
+        run: python main.py
