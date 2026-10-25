@@ -29,10 +29,12 @@ FOLLOWS_METRIC = 'page_follows'
 POST_METRICS = ['post_media_view', 'post_clicks', 'post_reactions_by_type_total']
 
 # Metriky stránky se zpětně dopočítávají, přepisujeme poslední dny.
-# BACKFILL_DAYS (max 90, limit jednoho volání) slouží k jednorázovému doplnění historie.
+# BACKFILL_DAYS slouží k jednorázovému doplnění historie (Facebook drží data 2 roky).
 PAGE_DAYS_BACK = int(os.environ.get('BACKFILL_DAYS') or 3)
-if not 1 <= PAGE_DAYS_BACK <= 90:
-    raise SystemExit("❌ BACKFILL_DAYS musí být v rozmezí 1–90.")
+MAX_BACKFILL_DAYS = 730
+WINDOW_DAYS = 90      # jedno volání /insights smí pokrýt nejvýše 93 dní
+if not 1 <= PAGE_DAYS_BACK <= MAX_BACKFILL_DAYS:
+    raise SystemExit(f"❌ BACKFILL_DAYS musí být v rozmezí 1–{MAX_BACKFILL_DAYS}.")
 POST_DAYS_BACK = 30   # starší příspěvky se skoro nemění
 
 PAGE_SCHEMA = [
@@ -70,7 +72,8 @@ def fb_get(url, params=None):
 
 
 def fetch_facebook_data(today):
-    page_since = (today - timedelta(days=PAGE_DAYS_BACK)).isoformat()
+    page_since_date = today - timedelta(days=min(PAGE_DAYS_BACK, WINDOW_DAYS))
+    page_since = page_since_date.isoformat()
     post_since = (today - timedelta(days=POST_DAYS_BACK)).isoformat()
     until = (today + timedelta(days=1)).isoformat()
 
@@ -92,6 +95,22 @@ def fetch_facebook_data(today):
         page = fb_get(next_url)
         posts.extend(page.get('data', []))
         next_url = page.get('paging', {}).get('next')
+
+    # Starší historii stahujeme po oknech, každé okno samostatným voláním
+    oldest = today - timedelta(days=PAGE_DAYS_BACK)
+    window_until = page_since_date
+    while window_until > oldest:
+        window_since = max(oldest, window_until - timedelta(days=WINDOW_DAYS))
+        older = fb_get(f"{GRAPH_URL}/{FB_PAGE_ID}/insights", {
+            'metric': ','.join(PAGE_METRICS + [FOLLOWS_METRIC]),
+            'period': 'day',
+            'since': window_since.isoformat(),
+            'until': window_until.isoformat(),
+            'access_token': FB_ACCESS_TOKEN,
+        })
+        data.setdefault('insights', {}).setdefault('data', []).extend(older.get('data', []))
+        print(f"Doplněno okno {window_since} – {window_until}")
+        window_until = window_since
 
     return data, posts
 

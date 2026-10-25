@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       backfill_days:
-        description: 'Kolik dní zpět doplnit (1-90). Prázdné = běžný běh (3 dny).'
+        description: 'Kolik dní zpět doplnit (1-730). Prázdné = běžný běh (3 dny).'
         required: false
         default: ''
 
