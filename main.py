@@ -31,6 +31,11 @@ def get_fb_page_insights():
     }
     
     response = requests.get(url, params=params)
+    # Přidáno pro zobrazení detailu chyby od Facebooku
+    if response.status_code != 200:
+        print("❌ Chyba z Facebook API:")
+        print(response.text)
+        
     response.raise_for_status()
     data = response.json().get('data', [])
     
