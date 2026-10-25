@@ -24,6 +24,8 @@ PAGE_METRICS = [
     'page_views_total',
     'page_video_views',
 ]
+# Denní historie sledujících, ukládá se do sloupce followers_count
+FOLLOWS_METRIC = 'page_follows'
 POST_METRICS = ['post_media_view', 'post_clicks', 'post_reactions_by_type_total']
 
 # Metriky stránky se zpětně dopočítávají, přepisujeme poslední dny.
@@ -74,7 +76,7 @@ def fetch_facebook_data(today):
 
     fields = (
         f"followers_count,"
-        f"insights.metric({','.join(PAGE_METRICS)}).period(day)"
+        f"insights.metric({','.join(PAGE_METRICS + [FOLLOWS_METRIC])}).period(day)"
         f".since({page_since}).until({today.isoformat()}),"
         f"posts.since({post_since}).until({until}).limit(25)"
         f"{{id,created_time,message,permalink_url,"
@@ -104,14 +106,15 @@ def build_page_rows(data, today, ingested_at):
             row = rows.setdefault(day, {
                 'date': day, 'page_id': FB_PAGE_ID, 'ingested_at': ingested_at,
             })
-            row[item['name']] = v.get('value', 0)
+            column = 'followers_count' if item['name'] == FOLLOWS_METRIC else item['name']
+            row[column] = v.get('value', 0)
 
-    # followers_count je snímek v okamžiku stažení, ukládáme ho k včerejšku
+    # Záloha: aktuální snímek sledujících, kdyby page_follows za včerejšek chyběl
     yesterday = (today - timedelta(days=1)).isoformat()
     row = rows.setdefault(yesterday, {
         'date': yesterday, 'page_id': FB_PAGE_ID, 'ingested_at': ingested_at,
     })
-    row['followers_count'] = data.get('followers_count')
+    row.setdefault('followers_count', data.get('followers_count'))
     return list(rows.values())
 
 

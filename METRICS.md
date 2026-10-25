@@ -13,7 +13,7 @@ Popis metrik, které se stahují z Graph API a ukládají do BigQuery (viz [sche
 
 | Sloupec | Graph API | Typ hodnoty | Co znamená |
 |---|---|---|---|
-| `followers_count` | pole `followers_count` | snímek | Aktuální počet sledujících stránky v okamžiku stažení. Historii si buduješ vlastními denními snímky. |
+| `followers_count` | `page_follows` (period=day) | denní, počet | Počet sledujících stránky na konci dne (sledování minus zrušená sledování). Díky denní periodě jde doplnit i historie. |
 | `page_media_view` | `page_media_view` | denní, počet | **Zobrazení** – kolikrát se obsah stránky (příspěvky, příběhy, reels, reklamy…) zobrazil na obrazovce. Jeden člověk může generovat víc zobrazení. Nahrazuje zrušené `page_impressions`. |
 | `page_total_media_view_unique` | `page_total_media_view_unique` | denní, počet | **Dosah** – počet jedinečných lidí, kterým se obsah zobrazil. Vždy ≤ `page_media_view`. Nahrazuje zrušené `page_impressions_unique`. |
 | `page_post_engagements` | `page_post_engagements` | denní, počet | **Interakce s příspěvky** – součet reakcí, komentářů, sdílení, kliknutí a dalších akcí u příspěvků stránky. |
