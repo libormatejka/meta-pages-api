@@ -16,16 +16,47 @@ BQ_DATASET = os.environ.get('BQ_DATASET')
 PAGE_TABLE = 'fb_page_daily'
 POST_TABLE = 'fb_post_daily'
 
-GRAPH_URL = 'https://graph.facebook.com/v25.0'
+GRAPH_URL = 'https://graph.facebook.com/v26.0'
 PAGE_METRICS = [
     'page_media_view',
     'page_total_media_view_unique',
     'page_post_engagements',
+    'page_total_actions',
     'page_views_total',
     'page_video_views',
+    'page_daily_follows',
+    'page_daily_follows_unique',
+    'page_daily_unfollows_unique',
+    'page_lifetime_engaged_followers_unique',
+    'page_actions_post_reactions_like_total',
+    'page_actions_post_reactions_love_total',
+    'page_actions_post_reactions_wow_total',
+    'page_actions_post_reactions_haha_total',
+    'page_actions_post_reactions_sorry_total',
+    'page_actions_post_reactions_anger_total',
+    'page_actions_post_reactions_total',
+    'page_video_views_organic',
+    'page_video_views_paid',
+    'page_video_view_time',
+    'page_video_repeat_views',
+    'page_video_complete_views_30s',
+    'page_video_complete_views_30s_unique',
+    'page_video_complete_views_30s_organic',
+    'page_video_complete_views_30s_paid',
+    'page_video_complete_views_30s_autoplayed',
+    'page_video_complete_views_30s_click_to_play',
+    'page_video_complete_views_30s_repeat_views',
+    'page_video_views_autoplayed',
+    'page_video_views_click_to_play',
+    'page_video_views_by_paid_non_paid',
+    'page_video_views_by_uploaded_hosted',
 ]
 # Denní historie sledujících, ukládá se do sloupce followers_count
 FOLLOWS_METRIC = 'page_follows'
+PAGE_JSON_METRICS = {
+    'page_video_views_by_paid_non_paid',
+    'page_video_views_by_uploaded_hosted',
+}
 POST_METRICS = ['post_media_view', 'post_clicks', 'post_reactions_by_type_total']
 
 # Metriky stránky se zpětně dopočítávají, přepisujeme poslední dny.
@@ -41,7 +72,10 @@ PAGE_SCHEMA = [
     bigquery.SchemaField('date', 'DATE'),
     bigquery.SchemaField('page_id', 'STRING'),
     bigquery.SchemaField('followers_count', 'INT64'),
-    *[bigquery.SchemaField(m, 'INT64') for m in PAGE_METRICS],
+    *[
+        bigquery.SchemaField(m, 'STRING' if m in PAGE_JSON_METRICS else 'INT64')
+        for m in PAGE_METRICS
+    ],
     bigquery.SchemaField('ingested_at', 'TIMESTAMP'),
 ]
 POST_SCHEMA = [
@@ -126,7 +160,11 @@ def build_page_rows(data, today, ingested_at):
                 'date': day, 'page_id': FB_PAGE_ID, 'ingested_at': ingested_at,
             })
             column = 'followers_count' if item['name'] == FOLLOWS_METRIC else item['name']
-            row[column] = v.get('value', 0)
+            value = v.get('value', 0)
+            row[column] = (
+                json.dumps(value) if column in PAGE_JSON_METRICS and value is not None
+                else value
+            )
 
     # Záloha: aktuální snímek sledujících, kdyby page_follows za včerejšek chyběl
     yesterday = (today - timedelta(days=1)).isoformat()
@@ -187,8 +225,12 @@ def merge_rows(client, table, schema, rows, keys):
     columns = [f.name for f in schema]
 
     def src(col):
-        # reactions_by_type je ve staging STRING, v cílové tabulce JSON
-        return f"PARSE_JSON(S.{col})" if col == 'reactions_by_type' else f"S.{col}"
+        # JSON hodnoty jsou ve staging STRING, v cílové tabulce JSON
+        return (
+            f"PARSE_JSON(S.{col})"
+            if col == 'reactions_by_type' or col in PAGE_JSON_METRICS
+            else f"S.{col}"
+        )
 
     on = ' AND '.join(f"T.{k} = S.{k}" for k in keys)
     # COALESCE: chybějící hodnota (např. followers_count u starších dnů) nepřepíše existující
