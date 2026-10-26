@@ -58,8 +58,23 @@ PAGE_JSON_METRICS = {
     'page_video_views_by_paid_non_paid',
     'page_video_views_by_uploaded_hosted',
 }
-POST_METRICS = ['post_media_view', 'post_clicks', 'post_reactions_by_type_total']
-
+POST_METRICS = [
+    'post_media_view',
+    'post_total_media_view_unique',
+    'post_clicks',
+    'post_reactions_by_type_total',
+    'post_video_views',
+    'post_video_views_organic',
+    'post_video_views_paid',
+    'post_video_views_autoplayed',
+    'post_video_complete_views_30s',
+    'post_video_complete_views_30s_unique',
+    'post_video_complete_views_30s_organic',
+    'post_video_complete_views_30s_paid',
+    'post_video_complete_views_30s_autoplayed',
+    'post_video_view_time',
+    'post_video_avg_time_watched',
+]
 # Metriky stránky se zpětně dopočítávají, přepisujeme poslední dny.
 # BACKFILL_DAYS slouží k jednorázovému doplnění historie (Facebook drží data 2 roky).
 PAGE_DAYS_BACK = int(os.environ.get('BACKFILL_DAYS') or 3)
@@ -87,11 +102,23 @@ POST_SCHEMA = [
     bigquery.SchemaField('message', 'STRING'),
     bigquery.SchemaField('permalink_url', 'STRING'),
     bigquery.SchemaField('post_media_view', 'INT64'),
+    bigquery.SchemaField('post_total_media_view_unique', 'INT64'),
     bigquery.SchemaField('post_clicks', 'INT64'),
     bigquery.SchemaField('reactions_total', 'INT64'),
     bigquery.SchemaField('comments_total', 'INT64'),
     bigquery.SchemaField('shares_total', 'INT64'),
     bigquery.SchemaField('reactions_by_type', 'STRING'),
+    bigquery.SchemaField('post_video_views', 'INT64'),
+    bigquery.SchemaField('post_video_views_organic', 'INT64'),
+    bigquery.SchemaField('post_video_views_paid', 'INT64'),
+    bigquery.SchemaField('post_video_views_autoplayed', 'INT64'),
+    bigquery.SchemaField('post_video_complete_views_30s', 'INT64'),
+    bigquery.SchemaField('post_video_complete_views_30s_unique', 'INT64'),
+    bigquery.SchemaField('post_video_complete_views_30s_organic', 'INT64'),
+    bigquery.SchemaField('post_video_complete_views_30s_paid', 'INT64'),
+    bigquery.SchemaField('post_video_complete_views_30s_autoplayed', 'INT64'),
+    bigquery.SchemaField('post_video_view_time', 'INT64'),
+    bigquery.SchemaField('post_video_avg_time_watched', 'FLOAT64'),
     bigquery.SchemaField('ingested_at', 'TIMESTAMP'),
 ]
 
@@ -191,7 +218,7 @@ def build_post_rows(posts, today, ingested_at):
             values = item.get('values', [])
             metrics[item['name']] = values[0].get('value') if values else None
         by_type = metrics.get('post_reactions_by_type_total') or {}
-        rows.append({
+        row = {
             'snapshot_date': today.isoformat(),
             'page_id': FB_PAGE_ID,
             'post_id': p['id'],
@@ -205,7 +232,13 @@ def build_post_rows(posts, today, ingested_at):
             'shares_total': p.get('shares', {}).get('count', 0),
             'reactions_by_type': json.dumps(by_type),
             'ingested_at': ingested_at,
-        })
+        }
+        for metric in POST_METRICS:
+            if metric == 'post_reactions_by_type_total':
+                continue
+            value = metrics.get(metric)
+            row[metric] = value if value is not None else 0
+        rows.append(row)
     return rows
 
 
@@ -225,23 +258,27 @@ def merge_rows(client, table, schema, rows, keys):
     staging = f"{GCP_PROJECT_ID}.{BQ_DATASET}._stg_{table}_{uuid.uuid4().hex[:8]}"
     columns = [f.name for f in schema]
 
-    json_columns = (
-        {'reactions_by_type'} if table == POST_TABLE else PAGE_JSON_METRICS
-    )
     target_schema = {field.name: field.field_type for field in client.get_table(target).schema}
-    mismatched_json_columns = {
-        column: target_schema.get(column)
-        for column in json_columns
-        if target_schema.get(column) != 'JSON'
+    expected_types = {
+        field.name: (
+            'JSON' if field.name == 'reactions_by_type' or field.name in PAGE_JSON_METRICS
+            else field.field_type
+        )
+        for field in schema
     }
-    if mismatched_json_columns:
+    mismatched_columns = {
+        column: (expected_type, target_schema.get(column))
+        for column, expected_type in expected_types.items()
+        if target_schema.get(column) != expected_type
+    }
+    if mismatched_columns:
         actual_types = ', '.join(
-            f'{column}={field_type or "missing"}'
-            for column, field_type in mismatched_json_columns.items()
+            f'{column}: expected {expected}, found {actual or "missing"}'
+            for column, (expected, actual) in mismatched_columns.items()
         )
         raise RuntimeError(
             f"BigQuery schema mismatch in {target}: {actual_types}. "
-            "Run migrate_page_metrics.sql before starting the sync."
+            f"Run the migration for {table} before starting the sync."
         )
 
     def src(col):

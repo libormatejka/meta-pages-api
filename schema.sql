@@ -81,19 +81,31 @@ ALTER TABLE `collectorboycz.MarketingData.fb_page_daily`
   ALTER COLUMN page_video_views_by_uploaded_hosted SET OPTIONS (description = 'Rozpad denních zhlédnutí podle typu videa/hostingu, ve struktuře vrácené Meta API.'),
   ALTER COLUMN ingested_at SET OPTIONS (description = 'Čas, kdy byl řádek načten do BigQuery.');
 
-CREATE TABLE IF NOT EXISTS `PROJECT.DATASET.fb_post_daily` (
+CREATE TABLE IF NOT EXISTS `collectorboycz.MarketingData.fb_post_daily` (
   snapshot_date DATE NOT NULL OPTIONS (description = 'Den snímku lifetime hodnot'),
   page_id STRING NOT NULL,
   post_id STRING NOT NULL,
   created_time TIMESTAMP,
   message STRING,
   permalink_url STRING,
-  post_media_view INT64,
-  post_clicks INT64,
+  post_media_view INT64 OPTIONS (description = 'Kumulativní počet zobrazení příspěvku od jeho zveřejnění.'),
+  post_total_media_view_unique INT64 OPTIONS (description = 'Kumulativní počet unikátních lidí, kterým se příspěvek zobrazil.'),
+  post_clicks INT64 OPTIONS (description = 'Kumulativní počet kliknutí na příspěvek podle definice Meta.'),
   reactions_total INT64,
   comments_total INT64,
   shares_total INT64,
   reactions_by_type JSON,
+  post_video_views INT64 OPTIONS (description = 'Kumulativní počet zhlédnutí videa v příspěvku.'),
+  post_video_views_organic INT64 OPTIONS (description = 'Kumulativní počet organických zhlédnutí videa v příspěvku.'),
+  post_video_views_paid INT64 OPTIONS (description = 'Kumulativní počet placených zhlédnutí videa v příspěvku.'),
+  post_video_views_autoplayed INT64 OPTIONS (description = 'Kumulativní počet automaticky spuštěných zhlédnutí videa v příspěvku.'),
+  post_video_complete_views_30s INT64 OPTIONS (description = 'Kumulativní počet zhlédnutí videa alespoň 30 sekund nebo celého kratšího videa.'),
+  post_video_complete_views_30s_unique INT64 OPTIONS (description = 'Kumulativní počet unikátních lidí, kteří zhlédli video alespoň 30 sekund nebo celé kratší video.'),
+  post_video_complete_views_30s_organic INT64 OPTIONS (description = 'Kumulativní počet organických zhlédnutí videa alespoň 30 sekund.'),
+  post_video_complete_views_30s_paid INT64 OPTIONS (description = 'Kumulativní počet placených zhlédnutí videa alespoň 30 sekund.'),
+  post_video_complete_views_30s_autoplayed INT64 OPTIONS (description = 'Kumulativní počet automaticky spuštěných zhlédnutí videa alespoň 30 sekund.'),
+  post_video_view_time INT64 OPTIONS (description = 'Kumulativní doba sledování videa v jednotce vrácené Meta API.'),
+  post_video_avg_time_watched FLOAT64 OPTIONS (description = 'Průměrná doba sledování videa v jednotce vrácené Meta API.'),
   ingested_at TIMESTAMP NOT NULL
 )
 PARTITION BY snapshot_date

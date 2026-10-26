@@ -63,13 +63,27 @@ Pomocné sloupce: `date` (den, ke kterému metriky patří), `page_id`, `ingeste
 | Sloupec | Graph API | Typ hodnoty | Co znamená |
 |---|---|---|---|
 | `post_media_view` | `post_media_view` | lifetime, počet | Kolikrát se příspěvek zobrazil na obrazovce (od vzniku). Nahrazuje zrušené `post_impressions`. |
+| `post_total_media_view_unique` | `post_total_media_view_unique` | lifetime, počet | Počet unikátních lidí, kterým se příspěvek zobrazil od zveřejnění. |
 | `post_clicks` | `post_clicks` | lifetime, počet | Počet kliknutí kamkoli v příspěvku (odkaz, fotka, „zobrazit více“…). |
 | `reactions_total` | `reactions.summary.total_count` | lifetime, počet | Celkový počet reakcí (To se mi líbí, Super, Haha…). |
 | `reactions_by_type` | `post_reactions_by_type_total` | lifetime, JSON | Rozpad reakcí podle typu, např. `{"like": 5, "love": 2}`. U příspěvku bez reakcí `{}`. |
 | `comments_total` | `comments.summary.total_count` | lifetime, počet | Počet komentářů. |
 | `shares_total` | `shares.count` | lifetime, počet | Počet sdílení. Pole `shares` chybí, pokud příspěvek nikdo nesdílel. |
+| `post_video_views` | stejná metrika | lifetime, počet | Celkový počet zhlédnutí videa v příspěvku. |
+| `post_video_views_organic` | stejná metrika | lifetime, počet | Organická zhlédnutí videa v příspěvku. |
+| `post_video_views_paid` | stejná metrika | lifetime, počet | Placená zhlédnutí videa v příspěvku. |
+| `post_video_views_autoplayed` | stejná metrika | lifetime, počet | Zhlédnutí videa spuštěná automaticky. |
+| `post_video_complete_views_30s` | stejná metrika | lifetime, počet | Zhlédnutí alespoň 30 sekund nebo celé video, pokud je kratší. |
+| `post_video_complete_views_30s_unique` | stejná metrika | lifetime, počet | Unikátní lidé, kteří zhlédli video alespoň 30 sekund nebo celé kratší video. |
+| `post_video_complete_views_30s_organic` | stejná metrika | lifetime, počet | Organická zhlédnutí alespoň 30 sekund. |
+| `post_video_complete_views_30s_paid` | stejná metrika | lifetime, počet | Placená zhlédnutí alespoň 30 sekund. |
+| `post_video_complete_views_30s_autoplayed` | stejná metrika | lifetime, počet | Automaticky spuštěná zhlédnutí alespoň 30 sekund. |
+| `post_video_view_time` | stejná metrika | lifetime, čas | Celková doba sledování videa; jednotku určuje Meta API. |
+| `post_video_avg_time_watched` | stejná metrika | lifetime, čas | Průměrná doba sledování videa; jednotku určuje Meta API. |
 
 Pomocné sloupce: `snapshot_date` (den snímku), `page_id`, `post_id`, `created_time` (kdy byl příspěvek publikován), `message` (text), `permalink_url` (odkaz na příspěvek), `ingested_at`.
+
+Post metriky byly 26. 10. 2026 ověřeny přes Graph API na jednom příspěvku. Dostupnost se může lišit podle typu příspěvku; u ne-video příspěvků mohou být video hodnoty prázdné nebo nulové. Probe odmítl `post_link_clicks`, `post_video_views_click_to_play`, `post_video_views_10s`, jeho autoplay/click varianty, `post_video_complete_views_30s_click_to_play` a `post_video_complete_views_30s_repeat_views`.
 
 ## Rozdíl: zobrazení vs. dosah
 
