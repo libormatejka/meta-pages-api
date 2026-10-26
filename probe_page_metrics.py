@@ -2,6 +2,7 @@ import csv
 import os
 import sys
 import time
+from pathlib import Path
 
 import requests
 
@@ -122,17 +123,23 @@ def main():
     since = (today - timedelta(days=7)).isoformat()
     until = today.isoformat()
 
-    writer = csv.writer(sys.stdout)
-    writer.writerow(['metric', 'period', 'status', 'details'])
-    for metric in PAGE_METRICS:
-        status, details = probe(metric, 'day', since, until)
-        writer.writerow([metric, 'day', status, details.replace('\n', ' ')])
-        time.sleep(0.25)
-
-        if status in {'PERIOD_ERROR', 'VALID_NO_DATA', 'VALID_NO_VALUES'}:
-            status, details = probe(metric, 'lifetime', since, until)
-            writer.writerow([metric, 'lifetime', status, details.replace('\n', ' ')])
+    output_path = Path(os.environ.get('METRICS_PROBE_OUTPUT', 'page-metrics-probe.csv'))
+    with output_path.open('w', encoding='utf-8', newline='') as output_file:
+        writer = csv.writer(output_file)
+        writer.writerow(['metric', 'period', 'status', 'details'])
+        for metric in PAGE_METRICS:
+            status, details = probe(metric, 'day', since, until)
+            writer.writerow([metric, 'day', status, details.replace('\n', ' ')])
             time.sleep(0.25)
+
+            if status in {'PERIOD_ERROR', 'VALID_NO_DATA', 'VALID_NO_VALUES'}:
+                status, details = probe(metric, 'lifetime', since, until)
+                writer.writerow([metric, 'lifetime', status, details.replace('\n', ' ')])
+                time.sleep(0.25)
+
+    print(f'CSV report written to {output_path}')
+    with output_path.open(encoding='utf-8') as report:
+        sys.stdout.write(report.read())
 
 
 if __name__ == '__main__':

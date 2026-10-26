@@ -38,6 +38,14 @@ jobs:
           FB_ACCESS_TOKEN: ${{ secrets.FB_ACCESS_TOKEN }}
         run: python probe_page_metrics.py
 
+      - name: Uložení CSV reportu metrik
+        if: github.event_name == 'workflow_dispatch' && inputs.probe_metrics
+        uses: actions/upload-artifact@v4
+        with:
+          name: page-metrics-probe
+          path: page-metrics-probe.csv
+          if-no-files-found: error
+
       - name: Spuštění synchronizace
         if: github.event_name != 'workflow_dispatch' || !inputs.probe_metrics
         env:
