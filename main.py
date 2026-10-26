@@ -133,6 +133,48 @@ def fb_get(url, params=None):
     return response.json()
 
 
+def fetch_insights_window(start, end, metrics):
+    params = {
+        'metric': ','.join(metrics),
+        'period': 'day',
+        'since': start.isoformat(),
+        'until': end.isoformat(),
+        'access_token': FB_ACCESS_TOKEN,
+    }
+    try:
+        payload = fb_get(f"{GRAPH_URL}/{FB_PAGE_ID}/insights", params)
+        return payload.get('data', [])
+    except requests.HTTPError as exc:
+        response_text = exc.response.text.lower() if exc.response is not None else ''
+        if 'reduce the amount of data' not in response_text:
+            raise
+
+        if len(metrics) > 1:
+            midpoint = len(metrics) // 2
+            print(
+                f"Meta limit: splitting {len(metrics)} metrics "
+                f"for {start} – {end}."
+            )
+            return (
+                fetch_insights_window(start, end, metrics[:midpoint])
+                + fetch_insights_window(start, end, metrics[midpoint:])
+            )
+
+        days = (end - start).days
+        if days <= 1:
+            raise
+
+        midpoint = start + timedelta(days=days // 2)
+        print(
+            f"Meta limit: splitting metric {metrics[0]} "
+            f"into {start} – {midpoint} and {midpoint} – {end}."
+        )
+        return (
+            fetch_insights_window(start, midpoint, metrics)
+            + fetch_insights_window(midpoint, end, metrics)
+        )
+
+
 def fetch_facebook_data(today):
     page_since_date = today - timedelta(days=min(PAGE_DAYS_BACK, WINDOW_DAYS))
     page_since = page_since_date.isoformat()
@@ -165,14 +207,12 @@ def fetch_facebook_data(today):
     window_until = page_since_date
     while window_until > oldest:
         window_since = max(oldest, window_until - timedelta(days=WINDOW_DAYS))
-        older = fb_get(f"{GRAPH_URL}/{FB_PAGE_ID}/insights", {
-            'metric': ','.join(PAGE_METRICS + [FOLLOWS_METRIC]),
-            'period': 'day',
-            'since': window_since.isoformat(),
-            'until': window_until.isoformat(),
-            'access_token': FB_ACCESS_TOKEN,
-        })
-        data.setdefault('insights', {}).setdefault('data', []).extend(older.get('data', []))
+        older = fetch_insights_window(
+            window_since,
+            window_until,
+            PAGE_METRICS + [FOLLOWS_METRIC],
+        )
+        data.setdefault('insights', {}).setdefault('data', []).extend(older)
         print(f"Doplněno okno {window_since} – {window_until}")
         window_until = window_since
 
