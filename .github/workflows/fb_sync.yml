@@ -10,6 +10,11 @@ on:
         description: 'Kolik dní zpět doplnit (1-730). Prázdné = běžný běh (3 dny).'
         required: false
         default: ''
+      probe_metrics:
+        description: 'Ověřit kandidátní Page Insights metriky místo synchronizace'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   sync_metrics:
@@ -26,7 +31,15 @@ jobs:
       - name: Instalace závislostí
         run: pip install requests google-cloud-bigquery google-auth
         
-      - name: Spuštění Python skriptu
+      - name: Ověření Page Insights metrik
+        if: github.event_name == 'workflow_dispatch' && inputs.probe_metrics
+        env:
+          FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
+          FB_ACCESS_TOKEN: ${{ secrets.FB_ACCESS_TOKEN }}
+        run: python probe_page_metrics.py
+
+      - name: Spuštění synchronizace
+        if: github.event_name != 'workflow_dispatch' || !inputs.probe_metrics
         env:
           FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
           FB_ACCESS_TOKEN: ${{ secrets.FB_ACCESS_TOKEN }}
