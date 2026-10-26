@@ -136,7 +136,8 @@ def fb_get(url, params=None):
 def fetch_facebook_data(today):
     page_since_date = today - timedelta(days=min(PAGE_DAYS_BACK, WINDOW_DAYS))
     page_since = page_since_date.isoformat()
-    post_since = (today - timedelta(days=POST_DAYS_BACK)).isoformat()
+    post_days_back = max(POST_DAYS_BACK, PAGE_DAYS_BACK)
+    post_since = (today - timedelta(days=post_days_back)).isoformat()
     until = (today + timedelta(days=1)).isoformat()
 
     fields = (
@@ -157,6 +158,7 @@ def fetch_facebook_data(today):
         page = fb_get(next_url)
         posts.extend(page.get('data', []))
         next_url = page.get('paging', {}).get('next')
+    print(f"Načteno {len(posts)} příspěvků od {post_since} do {until}.")
 
     # Starší historii stahujeme po oknech, každé okno samostatným voláním
     oldest = today - timedelta(days=PAGE_DAYS_BACK)
