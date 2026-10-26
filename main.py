@@ -54,6 +54,7 @@ PAGE_METRICS = [
 # Denní historie sledujících, ukládá se do sloupce followers_count
 FOLLOWS_METRIC = 'page_follows'
 PAGE_JSON_METRICS = {
+    'page_actions_post_reactions_total',
     'page_video_views_by_paid_non_paid',
     'page_video_views_by_uploaded_hosted',
 }

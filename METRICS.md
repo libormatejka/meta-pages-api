@@ -29,7 +29,7 @@ Popis metrik, které se stahují z Graph API a ukládají do BigQuery (viz [sche
 | `page_actions_post_reactions_haha_total` | stejná metrika | denní, počet | Denní počet reakcí Haha. |
 | `page_actions_post_reactions_sorry_total` | stejná metrika | denní, počet | Denní počet reakcí Sorry. |
 | `page_actions_post_reactions_anger_total` | stejná metrika | denní, počet | Denní počet reakcí Anger. |
-| `page_actions_post_reactions_total` | stejná metrika | denní, počet | Celkový počet reakcí na příspěvky za den. |
+| `page_actions_post_reactions_total` | stejná metrika | denní, JSON | Rozpad reakcí podle typu; API vrací objekt, ne jedno číslo. |
 | `page_video_views_organic` | stejná metrika | denní, počet | Organická zhlédnutí videí. |
 | `page_video_views_paid` | stejná metrika | denní, počet | Zhlédnutí videí z placené distribuce. |
 | `page_video_view_time` | stejná metrika | denní, čas | Celkový čas sledování videí; jednotku ověř v popisu vráceném Graph API. |

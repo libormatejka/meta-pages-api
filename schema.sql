@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS `PROJECT.DATASET.fb_page_daily` (
   page_actions_post_reactions_haha_total INT64,
   page_actions_post_reactions_sorry_total INT64,
   page_actions_post_reactions_anger_total INT64,
-  page_actions_post_reactions_total INT64,
+  page_actions_post_reactions_total JSON,
   page_video_views_organic INT64,
   page_video_views_paid INT64,
   page_video_view_time INT64,
