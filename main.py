@@ -258,6 +258,13 @@ def merge_rows(client, table, schema, rows, keys):
     staging = f"{GCP_PROJECT_ID}.{BQ_DATASET}._stg_{table}_{uuid.uuid4().hex[:8]}"
     columns = [f.name for f in schema]
 
+    def normalize_type(field_type):
+        return {
+            'INTEGER': 'INT64',
+            'FLOAT': 'FLOAT64',
+            'BOOLEAN': 'BOOL',
+        }.get(field_type, field_type)
+
     target_schema = {field.name: field.field_type for field in client.get_table(target).schema}
     expected_types = {
         field.name: (
@@ -269,7 +276,7 @@ def merge_rows(client, table, schema, rows, keys):
     mismatched_columns = {
         column: (expected_type, target_schema.get(column))
         for column, expected_type in expected_types.items()
-        if target_schema.get(column) != expected_type
+        if normalize_type(target_schema.get(column)) != normalize_type(expected_type)
     }
     if mismatched_columns:
         actual_types = ', '.join(
