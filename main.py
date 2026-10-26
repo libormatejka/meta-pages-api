@@ -225,6 +225,25 @@ def merge_rows(client, table, schema, rows, keys):
     staging = f"{GCP_PROJECT_ID}.{BQ_DATASET}._stg_{table}_{uuid.uuid4().hex[:8]}"
     columns = [f.name for f in schema]
 
+    json_columns = (
+        {'reactions_by_type'} if table == POST_TABLE else PAGE_JSON_METRICS
+    )
+    target_schema = {field.name: field.field_type for field in client.get_table(target).schema}
+    mismatched_json_columns = {
+        column: target_schema.get(column)
+        for column in json_columns
+        if target_schema.get(column) != 'JSON'
+    }
+    if mismatched_json_columns:
+        actual_types = ', '.join(
+            f'{column}={field_type or "missing"}'
+            for column, field_type in mismatched_json_columns.items()
+        )
+        raise RuntimeError(
+            f"BigQuery schema mismatch in {target}: {actual_types}. "
+            "Run migrate_page_metrics.sql before starting the sync."
+        )
+
     def src(col):
         # JSON hodnoty jsou ve staging STRING, v cílové tabulce JSON
         return (
